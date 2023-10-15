@@ -5,12 +5,12 @@ import com.supermercado.java.exceptions.RegraNegocioException;
 import com.supermercado.java.model.entity.Produto;
 import com.supermercado.java.service.ProdutoService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -31,6 +31,7 @@ public class ProdutoController {
         }
         return produto;
     }
+
     @PostMapping("/salvar")
     public ResponseEntity salvar(@RequestBody ProdutoDTO dto) {
         try {
@@ -39,5 +40,42 @@ public class ProdutoController {
         } catch (RegraNegocioException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @PutMapping("/atualizar/{id}")
+    public ResponseEntity atualizar(@PathVariable("id") Long id, @RequestBody ProdutoDTO dto) {
+        return service.consultaPorId(id).map(entity -> {
+            try {
+                Produto produto = converter(dto);
+                produto.setId(entity.getId());
+                service.atualizar(produto);
+                return ResponseEntity.ok(produto);
+            } catch (RegraNegocioException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }).orElseGet(() -> ResponseEntity.badRequest().body("O id do produto informado não foi encontrado na base de dados"));
+    }
+
+    @DeleteMapping("/deletar/{id}")
+    public ResponseEntity deletar(@PathVariable("id") Long id) {
+        return service.consultaPorId(id).map(entity -> {
+            service.deletar(entity);
+            return new ResponseEntity(HttpStatus.NO_CONTENT);
+        }).orElseGet(() -> ResponseEntity.badRequest().body("O id do produto informado não foi encontrado na base de dados"));
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity buscar(
+            @RequestParam(value = "nome", required = false) String nome,
+            @RequestParam(value = "quantidade", required = false) Integer quantidade,
+            @RequestParam(value = "valor", required = false) Long valor
+    ) {
+        Produto produtoFiltro = new Produto();
+        produtoFiltro.setNome(nome);
+        produtoFiltro.setQuantidade(quantidade);
+        produtoFiltro.setValor(valor);
+
+        List<Produto> produtos = service.buscar(produtoFiltro);
+        return ResponseEntity.ok(produtos);
     }
 }

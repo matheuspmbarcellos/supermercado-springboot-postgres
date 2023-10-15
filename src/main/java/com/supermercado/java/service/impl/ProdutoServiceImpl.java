@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -41,5 +42,11 @@ public class ProdutoServiceImpl implements ProdutoService {
     public List<Produto> buscar(Produto produtoParamFiltro) {
         Example<Produto> example = Example.of(produtoParamFiltro);
         return repository.findAll(example);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Produto> consultaPorId(Long id) {
+        return repository.findById(id);
     }
 }
